@@ -18,10 +18,10 @@ pub use vm::{
     MemoryRef, RuntimeError, TableInstance, TableRef, VM,
 };
 
-pub fn instantiate<'a, B: AsRef<[u8]>>(
+pub fn instantiate<B: AsRef<[u8]>>(
     buf: B,
-    imports: Option<&'a dyn ImportResolver>,
-) -> Result<VM<'a>, error::YawError> {
+    imports: Option<&dyn ImportResolver>,
+) -> Result<VM<'_>, error::YawError> {
     let mut magic_number = [0; 4];
     let mut reader = buf.as_ref();
     reader.read_exact(&mut magic_number)?;
