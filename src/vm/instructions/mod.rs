@@ -1,0 +1,23 @@
+pub(crate) mod comparison;
+pub(crate) mod constants;
+pub(crate) mod control_flow;
+pub(crate) mod conversions;
+pub(crate) mod memory;
+pub(crate) mod numeric;
+pub(crate) mod opecode;
+pub(crate) mod parametric;
+pub(crate) mod pop;
+pub(crate) mod reinterpretation;
+pub(crate) mod variables;
+
+pub(crate) use comparison::*;
+pub(crate) use constants::*;
+pub(crate) use control_flow::*;
+pub(crate) use conversions::*;
+pub(crate) use memory::*;
+pub(crate) use numeric::*;
+pub(crate) use opecode::*;
+pub(crate) use parametric::*;
+pub(crate) use pop::*;
+pub(crate) use reinterpretation::*;
+pub(crate) use variables::*;

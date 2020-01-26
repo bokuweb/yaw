@@ -1,0 +1,44 @@
+name: Continuous Integration
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v1
+      - name: Cache cargo registry
+        uses: actions/cache@v1
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+      - name: Cache cargo index
+        uses: actions/cache@v1
+        with:
+          path: ~/.cargo/git
+          key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
+      - name: Cache cargo build
+        uses: actions/cache@v1
+        with:
+          path: target
+          key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
+      - name: Build
+        run: cargo build --verbose
+      - name: Install
+        run: |
+          git submodule update --init --recursive
+          sudo apt-get update
+          sudo apt-get install -y cmake clang
+          git clone --recursive https://github.com/WebAssembly/wabt
+          cd wabt
+          make
+          sudo cp -pR bin/* /usr/bin
+          rustup component add clippy
+      - name: Lint
+        run: |
+          make wasm -B
+          cargo clippy --all-targets --all-features -- -D warnings
+      - name: Test
+        run: |
+          make test
