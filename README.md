@@ -2,6 +2,15 @@
 
 [![GitHub Actions Status](https://github.com/bokuweb/yaw/workflows/Continuous%20Integration/badge.svg)](https://github.com/bokuweb/yaw/actions)
 
+## Installation
+
+For now, please install from github.
+
+```toml
+[dependencies]
+yaw = { git = "https://github.com/bokuweb/yaw.git" }
+```
+
 ## Example
 
 ```rust
