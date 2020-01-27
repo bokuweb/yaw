@@ -17,10 +17,9 @@ yaw = { git = "https://github.com/bokuweb/yaw.git" }
 use yaw::*;
 
 fn main() -> Result<(), error::YawError> {
-    let ins = instantiate(&include_bytes!("./add.wasm"), None)?;
+    let ins = instantiate(&include_bytes!("./add.wasm")[..], None)?;
     let ret = ins.invoke("add", &[RuntimeValue::I32(1), RuntimeValue::I32(2)])?;
     println!("1 + 2 = {:?}", ret);
     Ok(())
 }
-
 ```
