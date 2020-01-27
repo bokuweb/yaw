@@ -20,7 +20,7 @@ impl Decoder for DataSection {
     type Error = DecodeError;
 
     fn decode<R: Read>(reader: &mut R) -> Result<Self, Self::Error> {
-        let count: u8 = VarUint7::decode(reader)?.into();
+        let count: usize = VarUint32::decode(reader)?.into();
         let mut segments: Vec<DataSegment> = vec![];
         for _ in 0..count {
             let index: u32 = VarUint32::decode(reader)?.into();
