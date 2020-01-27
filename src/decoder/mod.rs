@@ -163,7 +163,6 @@ pub fn decode(buf: &[u8]) -> Result<Sections, DecodeError> {
         let mut body = vec![0u8; len];
         cur.read_exact(&mut body)?;
         let mut buf = Cursor::new(body);
-        dbg!(kind, len);
         match num_traits::FromPrimitive::from_u8(kind)
             .ok_or(DecodeError::InvalidSectionKindFormatError)?
         {

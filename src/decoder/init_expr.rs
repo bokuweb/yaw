@@ -13,7 +13,6 @@ use crate::vm::Globals;
 pub enum InitExpr {
     RuntimeValue(RuntimeValue),
     GlobalIndex(usize),
-    Unreachable,
 }
 
 impl InitExpr {
@@ -42,9 +41,7 @@ impl InitExpr {
                 let index: usize = VarUint32::decode(reader)?.into();
                 InitExpr::GlobalIndex(index)
             }
-            _ => {
-                return Err(DecodeError::InvalidInitializerError);
-            }
+            _ => return Err(DecodeError::InvalidInitializerError),
         };
         // Read 0x0B
         let _ = read_next(reader)?;
