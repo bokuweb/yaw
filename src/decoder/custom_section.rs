@@ -9,7 +9,7 @@ use super::{DecodeError, Decoder};
 #[derive(Debug, Clone, PartialEq)]
 pub struct CustomSection {
 	pub name: String,
-	pub payload: String,
+	pub payload: Vec<u8>,
 }
 
 impl Decoder for CustomSection {
@@ -18,15 +18,14 @@ impl Decoder for CustomSection {
 	fn decode<R: Read>(reader: &mut R) -> Result<Self, Self::Error> {
 		let name_len: u32 = VarUint32::decode(reader)?.into();
 		let bytes = read_bytes(reader, name_len as usize)?;
+		dbg!(name_len, &bytes);
 		let name = from_utf8(&bytes)?;
-
+		dbg!(&name);
 		let mut payload = vec![];
 		reader.read_to_end(&mut payload)?;
-		let payload = from_utf8(&payload)?;
-
 		Ok(CustomSection {
 			name: name.to_owned(),
-			payload: payload.to_owned(),
+			payload,
 		})
 	}
 }
