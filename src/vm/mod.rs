@@ -75,6 +75,7 @@ impl<'a> VM<'a> {
     pub fn invoke(&self, name: &str, args: &[RuntimeValue]) -> Result<Vec<RuntimeValue>, YawError> {
         let index = self.exports.resolve(name)?;
         let func = self.functions.get_ref(index as usize)?;
+        dbg!(&func);
         match &*func {
             FunctionInstance::InternalFunction(func) => self.invoke_internal(func, args),
             FunctionInstance::ExternalFunction(_) => unreachable!(),
@@ -352,8 +353,9 @@ impl<'a> VM<'a> {
             for r in result {
                 vstack.push(r);
             }
+            return Ok(());
         }
-        Ok(())
+        Err(RuntimeError::UndefinedFunctionError)
     }
 
     fn validate_call_indirect(

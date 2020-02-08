@@ -58,6 +58,9 @@ pub enum RuntimeError {
     #[fail(display = "Some I/O Error: {:?}", error)]
     IOError { error: io::Error },
 
+    #[fail(display = "utf8 error: {:?}", error)]
+    Utf8Error { error: std::str::Utf8Error },
+
     #[fail(display = "Failed to decode wasm file. Please specify valid wasm file")]
     DecodeError { error: DecodeError },
 }
@@ -71,5 +74,11 @@ impl From<io::Error> for RuntimeError {
 impl From<DecodeError> for RuntimeError {
     fn from(error: DecodeError) -> Self {
         RuntimeError::DecodeError { error }
+    }
+}
+
+impl From<std::str::Utf8Error> for RuntimeError {
+    fn from(error: std::str::Utf8Error) -> Self {
+        RuntimeError::Utf8Error { error }
     }
 }

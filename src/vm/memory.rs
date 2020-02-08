@@ -71,6 +71,13 @@ impl MemoryRef {
         })))
     }
 
+    pub fn to_string(&self, start: usize, len: usize) -> Result<String, std::str::Utf8Error> {
+        let b = self.0.borrow();
+        let b = &b.buf[start..start + len];
+        let s = std::str::from_utf8(b)?;
+        Ok(s.to_owned())
+    }
+
     pub fn grow(&self, delta: u32) -> i32 {
         let mut m = self.0.borrow_mut();
         let current = m.buf.len() / PAGE_SIZE;
