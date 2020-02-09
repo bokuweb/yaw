@@ -133,6 +133,7 @@ load!(f32_load, read_f32, f32);
 load!(f64_load, read_f64, f64);
 
 store!(i32_store, write_i32, i32);
+store!(u32_store, write_u32, u32);
 store!(i64_store, write_i64, i64);
 store!(f32_store, write_f32, f32);
 store!(f64_store, write_f64, f64);

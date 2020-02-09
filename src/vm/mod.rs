@@ -75,7 +75,6 @@ impl<'a> VM<'a> {
     pub fn invoke(&self, name: &str, args: &[RuntimeValue]) -> Result<Vec<RuntimeValue>, YawError> {
         let index = self.exports.resolve(name)?;
         let func = self.functions.get_ref(index as usize)?;
-        dbg!(&func);
         match &*func {
             FunctionInstance::InternalFunction(func) => self.invoke_internal(func, args),
             FunctionInstance::ExternalFunction(_) => unreachable!(),
