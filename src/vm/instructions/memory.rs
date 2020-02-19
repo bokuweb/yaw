@@ -9,6 +9,7 @@ use super::pop::*;
 
 fn validate_bounds(addr: u64, type_size: usize, current_size: usize) -> Result<(), RuntimeError> {
     if addr + type_size as u64 > current_size as u64 * PAGE_SIZE as u64 {
+        dbg!(addr, current_size, PAGE_SIZE);
         return Err(RuntimeError::OutOfBoundsMemoryAccessError);
     }
     Ok(())

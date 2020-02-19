@@ -78,9 +78,17 @@ impl MemoryRef {
         Ok(s.to_owned())
     }
 
+    pub fn slice(&self, start: usize, len: usize) -> Result<Vec<u8>, std::str::Utf8Error> {
+        let b = self.0.borrow();
+        let b = &b.buf[start..start + len];
+        let s = Vec::from(b);
+        Ok(s)
+    }
+
     pub fn grow(&self, delta: u32) -> i32 {
         let mut m = self.0.borrow_mut();
         let current = m.buf.len() / PAGE_SIZE;
+
         if let Some(max) = m.maximum {
             if current + delta as usize > max as usize {
                 return -1;
@@ -121,6 +129,15 @@ impl MemoryRef {
         let mut cur = Cursor::new(&mut m.buf);
         cur.set_position(u64::from(addr));
         let b = [data as u8; 1];
+        cur.write_all(&b)?;
+        Ok(())
+    }
+
+    pub fn u8_store(&self, addr: u32, data: u8) -> Result<(), RuntimeError> {
+        let mut m = self.0.borrow_mut();
+        let mut cur = Cursor::new(&mut m.buf);
+        cur.set_position(u64::from(addr));
+        let b = [data; 1];
         cur.write_all(&b)?;
         Ok(())
     }
