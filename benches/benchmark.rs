@@ -5,7 +5,12 @@ use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use std::fs::File;
 use std::io::Read;
 
+// wasmi
 use wasmi::{ImportsBuilder, Module, ModuleInstance, NopExternals, RuntimeValue};
+
+// wasm3
+use wasm3::environment::Environment;
+use wasm3::module::Module;
 
 fn load_from_file(filename: &str) -> Module {
     use std::io::prelude::*;
@@ -41,6 +46,21 @@ fn bench_fibs(c: &mut Criterion) {
                 instance
                     .invoke_export("fib", &[RuntimeValue::I32(*i as i32)], &mut NopExternals)
                     .unwrap();
+            });
+        });
+        group.bench_with_input(BenchmarkId::new("wasm3", i), i, |b, i| {
+            let env = Environment::new().expect("Unable to create environment");
+            let rt = env
+                .create_runtime(1024 * 60)
+                .expect("Unable to create runtime");
+            let module = Module::parse(&env, &include_bytes!("./fixtures/wasm/fib.wasm")[..])
+                .expect("Unable to parse module");
+            let module = rt.load_module(module).expect("Unable to load module");
+            let func = module
+                .find_function::<(i32>("fib")
+                .expect("Unable to find function");
+            b.iter(|| {
+                func.call(*i).unwrap()
             });
         });
     }
