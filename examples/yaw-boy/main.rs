@@ -3,14 +3,14 @@ extern crate yaw;
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
-use sdl2::event::Event;
-use sdl2::keyboard::Keycode;
+// use sdl2::event::Event;
+// use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
 use sdl2::rect::Point;
-use sdl2::render::WindowCanvas;
-use sdl2::Sdl;
+// use sdl2::render::WindowCanvas;
+// use sdl2::Sdl;
 
-use std::time::{Duration, SystemTime};
+// use std::time::{Duration, SystemTime};
 
 use self::yaw::*;
 
@@ -94,12 +94,8 @@ fn main() -> Result<(), error::YawError> {
   let mut canvas = window.into_canvas().build().unwrap();
   go.run(ins)?;
   go.create_gb();
-  let mut i = 0;
   loop {
-    i += 1;
-    dbg!(i);
     go.next();
-
     let id = go.copied_id.get();
     let values = go.values.borrow();
     if let BridgeValue::Uint8Array(buf) = &values[id] {
@@ -239,6 +235,8 @@ impl<'a> FunctionResolver for Go<'a> {
         let value = &self.load_value(sp + 8, &self.values.borrow())?;
         if let BridgeValue::Arguments(args) = value {
           self.set_int64(sp + 16, args.len() as u32)?;
+        } else {
+          unimplemented!()
         }
         Ok(vec![])
       }
@@ -246,8 +244,15 @@ impl<'a> FunctionResolver for Go<'a> {
         let sp: u32 = args[0].into();
         let value = self.load_value(sp + 8, &self.values.borrow())?;
         let index = self.get_int64(sp + 16)?;
-        if let BridgeValue::Arguments(arg) = value {
-          self.store_value(sp + 24, BridgeValue::Arg(arg[index as usize].clone()))?;
+        match value {
+          BridgeValue::Arguments(arg) => {
+            self.store_value(sp + 24, BridgeValue::Arg(arg[index as usize].clone()))?;
+          }
+          BridgeValue::Uint8Array(_u8arr) => unimplemented!(),
+          BridgeValue::Arg(Arg::Uint8Array(u8arr)) => {
+            self.store_value(sp + 24, BridgeValue::Number(u8arr[index as usize] as f64))?;
+          }
+          _ => unimplemented!(),
         }
         Ok(vec![])
       }
@@ -266,7 +271,7 @@ impl<'a> FunctionResolver for Go<'a> {
               return Ok(vec![]);
             }
           }
-          _ => {}
+          _ => unreachable!(),
         }
         Ok(vec![])
       }
@@ -477,11 +482,11 @@ impl<'a> Go<'a> {
       }
       "write" => {
         if let BridgeValue::WrappedFunc(WrappedFunc(EventId(id))) = &args[5] {
-          if let BridgeValue::Uint8Array(uint8Array) = &args[1] {
+          if let BridgeValue::Uint8Array(u8_arr) = &args[1] {
             let id = *id;
             *self.pending_event.borrow_mut() = Some(PendingEvent {
               id,
-              args: vec![Arg::Null, Arg::Number(uint8Array.buf.len() as f64)],
+              args: vec![Arg::Null, Arg::Number(u8_arr.buf.len() as f64)],
               result: Box::new(None),
             });
             self.resume();
