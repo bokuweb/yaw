@@ -23,3 +23,15 @@ fn main() -> Result<(), error::YawError> {
     Ok(())
 }
 ```
+
+## TODO
+
+- [x] Run gameboy emulator
+- [ ] Support WASI
+- [ ] Run NES emulator
+- [ ] no_std
+- [ ] Support ARM core
+
+## LICENSE
+
+MIT
