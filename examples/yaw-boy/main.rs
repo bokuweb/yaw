@@ -102,7 +102,7 @@ fn main() -> Result<(), error::YawError> {
       for i in 0..HEIGHT {
         for j in 0..WIDTH {
           let base = ((i * WIDTH + j) * 4) as usize;
-          let r = buf.get(base + 0);
+          let r = buf.get(base);
           let g = buf.get(base + 1);
           let b = buf.get(base + 2);
           canvas.set_draw_color(Color::RGB(r, g, b));
@@ -362,7 +362,7 @@ impl<'a> Go<'a> {
 
   fn load_slice(&self, addr: u32) -> Result<Vec<u8>, RuntimeError> {
     let mem = self.get_memory_ref();
-    let start = self.get_int64(addr + 0)?;
+    let start = self.get_int64(addr)?;
     let len = self.get_int64(addr + 8)?;
     let s = mem.slice(start as usize, len as usize)?;
     Ok(s)
@@ -458,14 +458,14 @@ impl<'a> Go<'a> {
 
   fn set_int64(&self, addr: u32, v: u32) -> Result<(), RuntimeError> {
     let mem = self.get_memory_ref();
-    mem.u32_store(addr + 0, v)?;
+    mem.u32_store(addr, v)?;
     mem.u32_store(addr + 4, (v as f64 / 4_294_967_296.0).floor() as u32)?;
     Ok(())
   }
 
   fn get_int64(&self, addr: u32) -> Result<i64, RuntimeError> {
     let mem = self.get_memory_ref();
-    Ok(mem.i64_load(addr + 0)?)
+    Ok(mem.i64_load(addr)?)
   }
 
   fn value_call(&self, sp: u32) -> Result<(), RuntimeError> {

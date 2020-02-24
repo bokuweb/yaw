@@ -29,7 +29,7 @@ jobs:
         run: |
           git submodule update --init --recursive
           sudo apt-get update
-          sudo apt-get install -y cmake clang
+          sudo apt-get install -y cmake clang libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-net-dev libsdl2-ttf-dev
           git clone --recursive https://github.com/WebAssembly/wabt
           cd wabt
           make
