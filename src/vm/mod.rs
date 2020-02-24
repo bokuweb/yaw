@@ -352,8 +352,9 @@ impl<'a> VM<'a> {
             for r in result {
                 vstack.push(r);
             }
+            return Ok(());
         }
-        Ok(())
+        Err(RuntimeError::UndefinedFunctionError)
     }
 
     fn validate_call_indirect(

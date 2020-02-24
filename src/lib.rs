@@ -14,8 +14,8 @@ pub use decoder::ExternalKind;
 pub use error::YawError;
 pub use types::*;
 pub use vm::{
-    ExportType, FunctionResolver, Global, ImportResolver, Imports, Memory, MemoryDescriptor,
-    MemoryRef, RuntimeError, TableInstance, TableRef, VM,
+    ExportType, Exports, FunctionResolver, Global, ImportResolver, Imports, Memory,
+    MemoryDescriptor, MemoryRef, RuntimeError, TableInstance, TableRef, VM,
 };
 
 pub fn instantiate<B: AsRef<[u8]>>(

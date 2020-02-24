@@ -71,9 +71,24 @@ impl MemoryRef {
         })))
     }
 
+    pub fn to_string(&self, start: usize, len: usize) -> Result<String, std::str::Utf8Error> {
+        let b = self.0.borrow();
+        let b = &b.buf[start..start + len];
+        let s = std::str::from_utf8(b)?;
+        Ok(s.to_owned())
+    }
+
+    pub fn slice(&self, start: usize, len: usize) -> Result<Vec<u8>, std::str::Utf8Error> {
+        let b = self.0.borrow();
+        let b = &b.buf[start..start + len];
+        let s = Vec::from(b);
+        Ok(s)
+    }
+
     pub fn grow(&self, delta: u32) -> i32 {
         let mut m = self.0.borrow_mut();
         let current = m.buf.len() / PAGE_SIZE;
+
         if let Some(max) = m.maximum {
             if current + delta as usize > max as usize {
                 return -1;
@@ -117,6 +132,15 @@ impl MemoryRef {
         cur.write_all(&b)?;
         Ok(())
     }
+
+    pub fn u8_store(&self, addr: u32, data: u8) -> Result<(), RuntimeError> {
+        let mut m = self.0.borrow_mut();
+        let mut cur = Cursor::new(&mut m.buf);
+        cur.set_position(u64::from(addr));
+        let b = [data; 1];
+        cur.write_all(&b)?;
+        Ok(())
+    }
 }
 
 load!(i16_load, read_i16, i16);
@@ -126,6 +150,7 @@ load!(f32_load, read_f32, f32);
 load!(f64_load, read_f64, f64);
 
 store!(i32_store, write_i32, i32);
+store!(u32_store, write_u32, u32);
 store!(i64_store, write_i64, i64);
 store!(f32_store, write_f32, f32);
 store!(f64_store, write_f64, f64);
