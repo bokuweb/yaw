@@ -27,9 +27,10 @@ fn main() -> Result<(), error::YawError> {
 ## TODO
 
 - [x] Run gameboy emulator
+- [ ] Add validator
 - [ ] Support WASI
 - [ ] Run NES emulator
-- [ ] no_std
+- [ ] Support no_std
 - [ ] Support ARM core
 
 ## LICENSE
