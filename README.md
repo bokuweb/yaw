@@ -24,6 +24,12 @@ fn main() -> Result<(), error::YawError> {
 }
 ```
 
+### More examples
+
+- [const](https://github.com/bokuweb/yaw/blob/master/examples/const.rs)
+- [add](https://github.com/bokuweb/yaw/blob/master/examples/add/main.rs)
+- [yaw-boy(gameboy emulator written in go)](https://github.com/bokuweb/yaw/tree/master/examples/yaw-boy) 
+
 ## TODO
 
 - [x] Run gameboy emulator
