@@ -26,7 +26,7 @@ fn bench_fibs(c: &mut Criterion) {
             let mut file = File::open("./fixtures/wasm/fib.wasm").unwrap();
             let mut buf = vec![];
             file.read_to_end(&mut buf).unwrap();
-            let ins = yaw::instantiate(&buf, None).unwrap();
+            let mut ins = yaw::instantiate(&buf, None).unwrap();
             b.iter(|| {
                 ins.invoke("fib", &[yaw::RuntimeValue::I32(*i as i32)])
                     .unwrap()

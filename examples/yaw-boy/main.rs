@@ -3,14 +3,8 @@ extern crate yaw;
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
-// use sdl2::event::Event;
-// use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
 use sdl2::rect::Point;
-// use sdl2::render::WindowCanvas;
-// use sdl2::Sdl;
-
-// use std::time::{Duration, SystemTime};
 
 use self::yaw::*;
 
@@ -79,7 +73,7 @@ fn main() -> Result<(), error::YawError> {
   let go = Go::new();
   let mut imports = Imports::new();
   imports.add_function(&go);
-  let ins = instantiate(
+  let mut ins = instantiate(
     &include_bytes!("./gopher-boy/docs/main.wasm")[..],
     Some(&imports),
   )?;
@@ -92,10 +86,10 @@ fn main() -> Result<(), error::YawError> {
     .build()
     .unwrap();
   let mut canvas = window.into_canvas().build().unwrap();
-  go.run(ins)?;
-  go.create_gb();
+  go.run(&mut ins)?;
+  go.create_gb(&mut ins);
   loop {
-    go.next();
+    go.next(&mut ins);
     let id = go.copied_id.get();
     let values = go.values.borrow();
     if let BridgeValue::Uint8Array(buf) = &values[id] {
@@ -115,8 +109,7 @@ fn main() -> Result<(), error::YawError> {
 }
 
 #[derive(Debug)]
-struct Go<'a> {
-  inst: RefCell<Option<VM<'a>>>,
+struct Go {
   argv: Vec<String>,
   exited: bool,
   values: RefCell<Vec<BridgeValue>>,
@@ -128,9 +121,10 @@ struct Go<'a> {
   copied_id: Cell<usize>,
 }
 
-impl<'a> FunctionResolver for Go<'a> {
+impl FunctionResolver for Go {
   fn invoke(
     &self,
+    ins: &mut VM,
     _name: &str,
     field_name: &str,
     args: &[RuntimeValue],
@@ -138,21 +132,21 @@ impl<'a> FunctionResolver for Go<'a> {
     match field_name {
       "syscall/js.valueGet" => {
         let sp: u32 = args[0].into();
-        let v = self.load_value(sp + 8, &self.values.borrow())?;
-        let name: &str = &self.load_string(sp + 16).unwrap();
-        let sp = self.get_sp()?;
+        let v = self.load_value(sp + 8, &self.values.borrow(), ins)?;
+        let name: &str = &self.load_string(sp + 16, ins).unwrap();
+        let sp = self.get_sp(ins)?;
         if let BridgeValue::PendingEvent(Some(e)) = v.clone() {
           match name {
             "id" => {
-              self.store_value(sp + 32, BridgeValue::Number(e.id as f64))?;
+              self.store_value(sp + 32, BridgeValue::Number(e.id as f64), ins)?;
               return Ok(vec![]);
             }
             "this" => {
-              self.store_value(sp + 32, BridgeValue::This)?;
+              self.store_value(sp + 32, BridgeValue::This, ins)?;
               return Ok(vec![]);
             }
             "args" => {
-              self.store_value(sp + 32, BridgeValue::Arguments(e.args))?;
+              self.store_value(sp + 32, BridgeValue::Arguments(e.args), ins)?;
               return Ok(vec![]);
             }
             _ => {}
@@ -160,60 +154,60 @@ impl<'a> FunctionResolver for Go<'a> {
         }
         match name {
           "O_WRONLY" | "O_RDWR" | "O_CREAT" | "O_TRUNC" | "O_APPEND" | "O_EXCL" => {
-            self.store_value(sp + 32, BridgeValue::Number(-1.0))?;
+            self.store_value(sp + 32, BridgeValue::Number(-1.0), ins)?;
             return Ok(vec![]);
           }
           "Uint8Array" => {
-            self.store_value(sp + 32, BridgeValue::Uint8ArrayConstructor)?;
+            self.store_value(sp + 32, BridgeValue::Uint8ArrayConstructor, ins)?;
             return Ok(vec![]);
           }
           "Array" => {
-            self.store_value(sp + 32, BridgeValue::Array)?;
+            self.store_value(sp + 32, BridgeValue::Array, ins)?;
             return Ok(vec![]);
           }
           "Object" => {
-            self.store_value(sp + 32, BridgeValue::Object)?;
+            self.store_value(sp + 32, BridgeValue::Object, ins)?;
             return Ok(vec![]);
           }
           "fs" => {
-            self.store_value(sp + 32, BridgeValue::Fs)?;
+            self.store_value(sp + 32, BridgeValue::Fs, ins)?;
             return Ok(vec![]);
           }
           "process" => {
-            self.store_value(sp + 32, BridgeValue::Undefined)?;
+            self.store_value(sp + 32, BridgeValue::Undefined, ins)?;
             return Ok(vec![]);
           }
           "constants" => {
-            self.store_value(sp + 32, BridgeValue::Constants)?;
+            self.store_value(sp + 32, BridgeValue::Constants, ins)?;
             return Ok(vec![]);
           }
           "_pendingEvent" => {
             let e = self.pending_event.borrow().clone();
-            self.store_value(sp + 32, BridgeValue::PendingEvent(e))?;
+            self.store_value(sp + 32, BridgeValue::PendingEvent(e), ins)?;
             return Ok(vec![]);
           }
           "length" => {
             if let BridgeValue::Arg(Arg::Uint8Array(a)) = &v {
-              self.store_value(sp + 32, BridgeValue::Number(a.len() as f64))?;
+              self.store_value(sp + 32, BridgeValue::Number(a.len() as f64), ins)?;
               return Ok(vec![]);
             }
             unreachable!();
           }
           _ => {}
         }
-        self.store_value(sp + 32, v)?;
+        self.store_value(sp + 32, v, ins)?;
         Ok(vec![])
       }
       "syscall/js.valueCall" => {
         let sp: u32 = args[0].into();
-        self.value_call(sp)?;
+        self.value_call(sp, ins)?;
         Ok(vec![])
       }
       "syscall/js.valueSet" => {
         let sp: u32 = args[0].into();
-        let _value = self.load_value(sp + 8, &self.values.borrow())?;
-        let name: &str = &self.load_string(sp + 16).unwrap();
-        let value = &self.load_value(sp + 32, &self.values.borrow())?;
+        let _value = self.load_value(sp + 8, &self.values.borrow(), ins)?;
+        let name: &str = &self.load_string(sp + 16, ins).unwrap();
+        let value = &self.load_value(sp + 32, &self.values.borrow(), ins)?;
         match name {
           "GB" => {
             if let BridgeValue::WrappedFunc(f) = value.clone() {
@@ -232,9 +226,9 @@ impl<'a> FunctionResolver for Go<'a> {
       }
       "syscall/js.valueLength" => {
         let sp: u32 = args[0].into();
-        let value = &self.load_value(sp + 8, &self.values.borrow())?;
+        let value = &self.load_value(sp + 8, &self.values.borrow(), ins)?;
         if let BridgeValue::Arguments(args) = value {
-          self.set_int64(sp + 16, args.len() as u32)?;
+          self.set_int64(sp + 16, args.len() as u32, ins)?;
         } else {
           unimplemented!()
         }
@@ -242,15 +236,19 @@ impl<'a> FunctionResolver for Go<'a> {
       }
       "syscall/js.valueIndex" => {
         let sp: u32 = args[0].into();
-        let value = self.load_value(sp + 8, &self.values.borrow())?;
-        let index = self.get_int64(sp + 16)?;
+        let value = self.load_value(sp + 8, &self.values.borrow(), ins)?;
+        let index = self.get_int64(sp + 16, ins)?;
         match value {
           BridgeValue::Arguments(arg) => {
-            self.store_value(sp + 24, BridgeValue::Arg(arg[index as usize].clone()))?;
+            self.store_value(sp + 24, BridgeValue::Arg(arg[index as usize].clone()), ins)?;
           }
           BridgeValue::Uint8Array(_u8arr) => unimplemented!(),
           BridgeValue::Arg(Arg::Uint8Array(u8arr)) => {
-            self.store_value(sp + 24, BridgeValue::Number(u8arr[index as usize] as f64))?;
+            self.store_value(
+              sp + 24,
+              BridgeValue::Number(u8arr[index as usize] as f64),
+              ins,
+            )?;
           }
           _ => unimplemented!(),
         }
@@ -258,15 +256,15 @@ impl<'a> FunctionResolver for Go<'a> {
       }
       "syscall/js.valueNew" => {
         let sp: u32 = args[0].into();
-        let value = self.load_value(sp + 8, &self.values.borrow())?;
-        let args = self.load_values(sp + 16, &self.values.borrow())?;
+        let value = self.load_value(sp + 8, &self.values.borrow(), ins)?;
+        let args = self.load_values(sp + 16, &self.values.borrow(), ins)?;
         match value {
           BridgeValue::Uint8ArrayConstructor => {
             if let BridgeValue::Number(arg) = args[0] {
               let b = vec![0; arg as usize];
               let result = Uint8Array::new(b);
-              self.store_value(sp + 40, BridgeValue::Uint8Array(result))?;
-              let mem = self.get_memory_ref();
+              self.store_value(sp + 40, BridgeValue::Uint8Array(result), ins)?;
+              let mem = self.get_memory_ref(ins);
               mem.u8_store(sp + 48, 1)?;
               return Ok(vec![]);
             }
@@ -277,11 +275,11 @@ impl<'a> FunctionResolver for Go<'a> {
       }
       "syscall/js.copyBytesToJS" => {
         let sp: u32 = args[0].into();
-        let src = self.load_slice(sp + 16)?;
+        let src = self.load_slice(sp + 16, ins)?;
         let len = src.len();
-        self.update_value(sp + 8, BridgeValue::Uint8Array(Uint8Array::new(src)))?;
-        self.set_int64(sp + 40, len as u32)?;
-        let mem = self.get_memory_ref();
+        self.update_value(sp + 8, BridgeValue::Uint8Array(Uint8Array::new(src)), ins)?;
+        self.set_int64(sp + 40, len as u32, ins)?;
+        let mem = self.get_memory_ref(ins);
         mem.u8_store(sp + 48, 1)?;
         Ok(vec![])
       }
@@ -290,10 +288,10 @@ impl<'a> FunctionResolver for Go<'a> {
   }
 }
 
-impl<'a> Go<'a> {
+impl Go {
   fn new() -> Self {
     Self {
-      inst: RefCell::new(None),
+      // inst: RefCell::new(None),
       argv: vec!["js".to_owned()],
       exited: false,
       exports: None,
@@ -313,7 +311,7 @@ impl<'a> Go<'a> {
     }
   }
 
-  fn create_gb(&self) {
+  fn create_gb(&self, ins: &mut VM) {
     if let Some(func) = self.gb.borrow().clone() {
       let e = func.0;
       let id = e.0;
@@ -324,10 +322,10 @@ impl<'a> Go<'a> {
         result: Box::new(None),
       });
     }
-    self.resume();
+    self.resume(ins);
   }
 
-  fn next(&self) {
+  fn next(&self, ins: &mut VM) {
     let buf = Rc::new(vec![0; 160 * 144 * 4]);
     if let Some(func) = self.next.borrow().clone() {
       let e = func.0;
@@ -338,32 +336,29 @@ impl<'a> Go<'a> {
         result: Box::new(None),
       });
     }
-    self.resume();
+    self.resume(ins);
   }
 
-  fn resume(&self) {
-    let inst = self.inst.borrow();
-    let inst = inst.as_ref().unwrap();
-    inst.invoke("resume", &[]).unwrap();
+  fn resume(&self, ins: &mut VM) {
+    ins.invoke("resume", &[]).unwrap();
   }
 
-  fn get_memory_ref(&self) -> MemoryRef {
-    let i = self.inst.borrow();
-    i.as_ref().unwrap().resolve_memory().unwrap()
+  fn get_memory_ref(&self, ins: &mut VM) -> MemoryRef {
+    ins.resolve_memory().unwrap()
   }
 
-  fn load_string(&self, addr: u32) -> Result<String, RuntimeError> {
-    let mem = self.get_memory_ref();
+  fn load_string(&self, addr: u32, ins: &mut VM) -> Result<String, RuntimeError> {
+    let mem = self.get_memory_ref(ins);
     let start = mem.i64_load(addr)? as usize;
     let len = mem.i64_load(addr + 8)? as usize;
     let s = mem.to_string(start, len)?;
     Ok(s)
   }
 
-  fn load_slice(&self, addr: u32) -> Result<Vec<u8>, RuntimeError> {
-    let mem = self.get_memory_ref();
-    let start = self.get_int64(addr)?;
-    let len = self.get_int64(addr + 8)?;
+  fn load_slice(&self, addr: u32, ins: &mut VM) -> Result<Vec<u8>, RuntimeError> {
+    let mem = self.get_memory_ref(ins);
+    let start = self.get_int64(addr, ins)?;
+    let len = self.get_int64(addr + 8, ins)?;
     let s = mem.slice(start as usize, len as usize)?;
     Ok(s)
   }
@@ -372,18 +367,24 @@ impl<'a> Go<'a> {
     &self,
     addr: u32,
     values: &[BridgeValue],
+    ins: &mut VM,
   ) -> Result<Vec<BridgeValue>, RuntimeError> {
-    let mem = self.get_memory_ref();
+    let mem = self.get_memory_ref(ins);
     let start = mem.i64_load(addr)? as usize;
     let len = mem.i64_load(addr + 8)? as usize;
     let mut a = vec![];
     for i in 0..len {
-      a.push(self.load_value((start + i * 8) as u32, values)?);
+      a.push(self.load_value((start + i * 8) as u32, values, ins)?);
     }
     Ok(a)
   }
-  fn load_value(&self, addr: u32, values: &[BridgeValue]) -> Result<BridgeValue, RuntimeError> {
-    let mem = self.get_memory_ref();
+  fn load_value(
+    &self,
+    addr: u32,
+    values: &[BridgeValue],
+    ins: &mut VM,
+  ) -> Result<BridgeValue, RuntimeError> {
+    let mem = self.get_memory_ref(ins);
     let f = mem.f64_load(addr)? as f64;
     if f == 0.0 {
       return Ok(BridgeValue::Undefined);
@@ -395,8 +396,8 @@ impl<'a> Go<'a> {
     Ok(values[id].clone())
   }
 
-  fn update_value(&self, addr: u32, value: BridgeValue) -> Result<(), RuntimeError> {
-    let mem = self.get_memory_ref();
+  fn update_value(&self, addr: u32, value: BridgeValue, ins: &mut VM) -> Result<(), RuntimeError> {
+    let mem = self.get_memory_ref(ins);
     let id = mem.i32_load(addr)? as usize;
     let mut v = self.values.borrow_mut();
     v[id] = value;
@@ -404,8 +405,8 @@ impl<'a> Go<'a> {
     Ok(())
   }
 
-  fn store_value(&self, addr: u32, value: BridgeValue) -> Result<(), RuntimeError> {
-    let mem = self.get_memory_ref();
+  fn store_value(&self, addr: u32, value: BridgeValue, ins: &mut VM) -> Result<(), RuntimeError> {
+    let mem = self.get_memory_ref(ins);
     let nan_head = 0x7ff8_0000;
 
     match value {
@@ -456,22 +457,22 @@ impl<'a> Go<'a> {
     Ok(())
   }
 
-  fn set_int64(&self, addr: u32, v: u32) -> Result<(), RuntimeError> {
-    let mem = self.get_memory_ref();
+  fn set_int64(&self, addr: u32, v: u32, ins: &mut VM) -> Result<(), RuntimeError> {
+    let mem = self.get_memory_ref(ins);
     mem.u32_store(addr, v)?;
     mem.u32_store(addr + 4, (v as f64 / 4_294_967_296.0).floor() as u32)?;
     Ok(())
   }
 
-  fn get_int64(&self, addr: u32) -> Result<i64, RuntimeError> {
-    let mem = self.get_memory_ref();
+  fn get_int64(&self, addr: u32, ins: &mut VM) -> Result<i64, RuntimeError> {
+    let mem = self.get_memory_ref(ins);
     Ok(mem.i64_load(addr)?)
   }
 
-  fn value_call(&self, sp: u32) -> Result<(), RuntimeError> {
-    let _ = self.load_value(sp + 8, &self.values.borrow());
-    let s: &str = &self.load_string(sp + 16)?;
-    let args = self.load_values(sp + 32, &self.values.borrow())?;
+  fn value_call(&self, sp: u32, ins: &mut VM) -> Result<(), RuntimeError> {
+    let _ = self.load_value(sp + 8, &self.values.borrow(), ins);
+    let s: &str = &self.load_string(sp + 16, ins)?;
+    let args = self.load_values(sp + 32, &self.values.borrow(), ins)?;
     let result = match s {
       "_makeFuncWrapper" => {
         if let BridgeValue::Number(id) = args[0] {
@@ -489,7 +490,7 @@ impl<'a> Go<'a> {
               args: vec![Arg::Null, Arg::Number(u8_arr.buf.len() as f64)],
               result: Box::new(None),
             });
-            self.resume();
+            self.resume(ins);
             BridgeValue::Undefined
           } else {
             unreachable!();
@@ -500,34 +501,26 @@ impl<'a> Go<'a> {
       }
       _ => unimplemented!("{}", s),
     };
-    let sp = self.get_sp()?;
-    self.store_value(sp + 56, result)?;
+    let sp = self.get_sp(ins)?;
+    self.store_value(sp + 56, result, ins)?;
     Ok(())
   }
 
-  fn get_sp(&self) -> Result<u32, RuntimeError> {
-    let inst = self.inst.borrow();
-    let inst = inst.as_ref().unwrap();
-    let sp: u32 = inst.invoke("getsp", &[]).unwrap()[0].into();
+  fn get_sp(&self, ins: &mut VM) -> Result<u32, RuntimeError> {
+    let sp: u32 = ins.invoke("getsp", &[]).unwrap()[0].into();
     Ok(sp)
   }
 
-  fn run(&self, inst: VM<'a>) -> Result<(), RuntimeError> {
-    {
-      let mut m = self.inst.borrow_mut();
-      *m = Some(inst);
-    }
+  fn run(&self, ins: &mut VM) -> Result<(), RuntimeError> {
     let offset = 4096;
     let argc = self.argv.len();
     let argv = offset;
-    self.start(argc as i32, argv as i32)?;
+    self.start(argc as i32, argv as i32, ins)?;
     Ok(())
   }
 
-  fn start(&self, argc: i32, argv: i32) -> Result<(), RuntimeError> {
-    let inst = self.inst.borrow();
-    let inst = inst.as_ref().unwrap();
-    inst
+  fn start(&self, argc: i32, argv: i32, ins: &mut VM) -> Result<(), RuntimeError> {
+    ins
       .invoke("run", &[RuntimeValue::I32(argc), RuntimeValue::I32(argv)])
       .unwrap();
     Ok(())

@@ -8,6 +8,7 @@ struct Wasi32Functions {}
 impl FunctionResolver for Wasi32Functions {
     fn invoke(
         &self,
+        _vm: &mut VM,
         _name: &str,
         field_name: &str,
         args: &[RuntimeValue],
@@ -30,7 +31,7 @@ fn main() -> Result<(), error::YawError> {
     let wasi_fn = Wasi32Functions {};
     let mut imports = Imports::new();
     imports.add_function(&wasi_fn);
-    let ins = instantiate(
+    let mut ins = instantiate(
         &include_bytes!("../../fixtures/wasm/wasi_hello.wasm")[..],
         Some(&imports),
     )?;

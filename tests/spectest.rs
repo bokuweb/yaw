@@ -89,6 +89,7 @@ impl<'a> SpecModule<'a> {
 impl<'a> FunctionResolver for SpecModule<'a> {
     fn invoke(
         &self,
+        _ins: &mut VM,
         name: &str,
         field_name: &str,
         args: &[RuntimeValue],
@@ -105,11 +106,11 @@ impl<'a> FunctionResolver for SpecModule<'a> {
             };
         }
         let inner = self.inner.borrow();
-        let m = inner
+        let mut m = inner
             .modules
             .get(&Some(name.to_owned()))
             .expect("should get module");
-        let res = m.borrow().invoke(field_name, args).unwrap();
+        let res = m.borrow_mut().invoke(field_name, args).unwrap();
         Ok(res)
     }
 }
@@ -231,7 +232,7 @@ pub fn exec_testsuite(p: impl AsRef<Path>) -> Result<(), yaw::error::YawError> {
                 } = action
                 {
                     let ins_ref = m.inner.borrow().modules[&module].clone();
-                    let ins = ins_ref.borrow_mut();
+                    let mut ins = ins_ref.borrow_mut();
                     let args: Vec<RuntimeValue> = args
                         .into_iter()
                         .map(|arg| match arg {
@@ -279,7 +280,7 @@ pub fn exec_testsuite(p: impl AsRef<Path>) -> Result<(), yaw::error::YawError> {
                 } = action
                 {
                     let ins_ref = m.inner.borrow().modules[&module].clone();
-                    let ins = ins_ref.borrow_mut();
+                    let mut ins = ins_ref.borrow_mut();
                     let args: Vec<RuntimeValue> = args
                         .into_iter()
                         .map(|arg| match arg {

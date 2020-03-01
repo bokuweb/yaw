@@ -3,7 +3,7 @@ use super::Global;
 use super::TableRef;
 
 use crate::types::RuntimeValue;
-use crate::vm::RuntimeError;
+use crate::vm::*;
 use std::cell::*;
 use std::collections::HashMap;
 use std::fmt;
@@ -40,6 +40,7 @@ pub trait ImportResolver: fmt::Debug {
 pub trait FunctionResolver: fmt::Debug {
     fn invoke(
         &self,
+        _vm: &mut VM,
         _name: &str,
         _field_name: &str,
         _args: &[RuntimeValue],

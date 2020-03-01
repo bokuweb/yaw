@@ -10,7 +10,7 @@ use std::rc::Rc;
 
 use yaw::types::*;
 use yaw::{
-    FunctionResolver, Global, Imports, MemoryDescriptor, MemoryRef, RuntimeError, ValueType,
+    FunctionResolver, Global, Imports, MemoryDescriptor, MemoryRef, RuntimeError, ValueType, VM,
 };
 
 #[test]
@@ -18,7 +18,7 @@ fn const_wasm() -> Result<(), yaw::error::YawError> {
     let mut file = fs::File::open("./fixtures/wasm/const.wasm")?;
     let mut buf = vec![];
     file.read_to_end(&mut buf)?;
-    let ins = yaw::instantiate(&buf, None)?;
+    let mut ins = yaw::instantiate(&buf, None)?;
     let ret = ins.invoke("c", &[])?;
     assert_eq!(vec![RuntimeValue::I32(42)], ret);
     Ok(())
@@ -29,7 +29,7 @@ fn add_wasm() -> Result<(), yaw::error::YawError> {
     let mut file = fs::File::open("./fixtures/wasm/add.wasm")?;
     let mut buf = vec![];
     file.read_to_end(&mut buf)?;
-    let ins = yaw::instantiate(&buf, None)?;
+    let mut ins = yaw::instantiate(&buf, None)?;
     let ret = ins.invoke("add", &[RuntimeValue::I32(3), RuntimeValue::I32(7)])?;
     assert_eq!(vec![RuntimeValue::I32(10)], ret);
     Ok(())
@@ -40,7 +40,7 @@ fn sub_wasm() -> Result<(), yaw::error::YawError> {
     let mut file = fs::File::open("./fixtures/wasm/sub.wasm")?;
     let mut buf = vec![];
     file.read_to_end(&mut buf)?;
-    let ins = yaw::instantiate(&buf, None)?;
+    let mut ins = yaw::instantiate(&buf, None)?;
     let ret = ins.invoke("sub", &[RuntimeValue::I32(3), RuntimeValue::I32(7)])?;
     assert_eq!(vec![RuntimeValue::I32(-4)], ret);
     Ok(())
@@ -51,7 +51,7 @@ fn add_f64_wasm() -> Result<(), yaw::error::YawError> {
     let mut file = fs::File::open("./fixtures/wasm/add_f64.wasm")?;
     let mut buf = vec![];
     file.read_to_end(&mut buf)?;
-    let ins = yaw::instantiate(&buf, None)?;
+    let mut ins = yaw::instantiate(&buf, None)?;
     let ret = ins.invoke("add_f64", &[RuntimeValue::F64(1.1), RuntimeValue::F64(2.2)])?;
     assert_eq!(vec![RuntimeValue::F64(3.300_000_000_000_000_3)], ret);
     Ok(())
@@ -62,7 +62,7 @@ fn sum_wasm() -> Result<(), yaw::error::YawError> {
     let mut file = fs::File::open("./fixtures/wasm/sum.wasm")?;
     let mut buf = vec![];
     file.read_to_end(&mut buf)?;
-    let ins = yaw::instantiate(&buf, None)?;
+    let mut ins = yaw::instantiate(&buf, None)?;
     let ret = ins.invoke("sum", &[RuntimeValue::I32(10)])?;
     assert_eq!(vec![RuntimeValue::I32(45)], ret);
     Ok(())
@@ -73,7 +73,7 @@ fn call_wasm() -> Result<(), yaw::error::YawError> {
     let mut file = fs::File::open("./fixtures/wasm/call.wasm")?;
     let mut buf = vec![];
     file.read_to_end(&mut buf)?;
-    let ins = yaw::instantiate(&buf, None)?;
+    let mut ins = yaw::instantiate(&buf, None)?;
     let ret = ins.invoke("call", &[])?;
     assert_eq!(vec![RuntimeValue::I32(42)], ret);
     Ok(())
@@ -84,7 +84,7 @@ fn call_loop_wasm() -> Result<(), yaw::error::YawError> {
     let mut file = fs::File::open("./fixtures/wasm/call_loop.wasm")?;
     let mut buf = vec![];
     file.read_to_end(&mut buf)?;
-    let ins = yaw::instantiate(&buf, None)?;
+    let mut ins = yaw::instantiate(&buf, None)?;
     let ret = ins.invoke("call_loop", &[RuntimeValue::I32(10)])?;
     assert_eq!(vec![RuntimeValue::I32(45)], ret);
     Ok(())
@@ -95,7 +95,7 @@ fn if_wasm() -> Result<(), yaw::error::YawError> {
     let mut file = fs::File::open("./fixtures/wasm/if.wasm")?;
     let mut buf = vec![];
     file.read_to_end(&mut buf)?;
-    let ins = yaw::instantiate(&buf, None)?;
+    let mut ins = yaw::instantiate(&buf, None)?;
     let ret = ins.invoke("if", &[])?;
     assert_eq!(vec![RuntimeValue::I32(10)], ret);
     Ok(())
@@ -106,7 +106,7 @@ fn if_else_wasm() -> Result<(), yaw::error::YawError> {
     let mut file = fs::File::open("./fixtures/wasm/if-else.wasm")?;
     let mut buf = vec![];
     file.read_to_end(&mut buf)?;
-    let ins = yaw::instantiate(&buf, None)?;
+    let mut ins = yaw::instantiate(&buf, None)?;
     let ret = ins.invoke("if_else", &[RuntimeValue::I32(0)])?;
     assert_eq!(vec![RuntimeValue::I32(20)], ret);
     let ret = ins.invoke("if_else", &[RuntimeValue::I32(1)])?;
@@ -119,7 +119,7 @@ fn fib_wasm() -> Result<(), yaw::error::YawError> {
     let mut file = fs::File::open("./fixtures/wasm/fib.wasm")?;
     let mut buf = vec![];
     file.read_to_end(&mut buf)?;
-    let ins = yaw::instantiate(&buf, None)?;
+    let mut ins = yaw::instantiate(&buf, None)?;
     let ret = ins.invoke("fib", &[RuntimeValue::I32(10)])?;
     assert_eq!(vec![RuntimeValue::I32(89)], ret);
     Ok(())
@@ -134,7 +134,7 @@ fn i32_load() -> Result<(), yaw::error::YawError> {
     mem.i32_store(0, 0x1234_5678)?;
     let mut imports = Imports::new();
     imports.add_memory("env", "memory", mem.clone());
-    let ins = yaw::instantiate(&buf, Some(&imports))?;
+    let mut ins = yaw::instantiate(&buf, Some(&imports))?;
     let ret = ins.invoke("load", &[])?;
     assert_eq!(vec![RuntimeValue::I32(0x1234_5678)], ret);
     mem.i32_store(0, 0x5A5A_A5A5)?;
@@ -151,7 +151,7 @@ fn i32_store() -> Result<(), yaw::error::YawError> {
     let mem = MemoryRef::new(MemoryDescriptor::new(1, None));
     let mut imports = Imports::new();
     imports.add_memory("env", "memory", mem);
-    let ins = yaw::instantiate(&buf, Some(&imports))?;
+    let mut ins = yaw::instantiate(&buf, Some(&imports))?;
     let ret = ins.invoke("store", &[])?;
     assert_eq!(vec![RuntimeValue::I32(0x5A5A_A5A5)], ret);
     Ok(())
@@ -162,7 +162,7 @@ fn memory() -> Result<(), yaw::error::YawError> {
     let mut file = fs::File::open("./fixtures/wasm/memory.wasm")?;
     let mut buf = vec![];
     file.read_to_end(&mut buf)?;
-    let ins = yaw::instantiate(&buf, None)?;
+    let mut ins = yaw::instantiate(&buf, None)?;
     let ret = ins.invoke("memory", &[RuntimeValue::I32(10), RuntimeValue::I32(20)])?;
     assert_eq!(vec![RuntimeValue::I32(30)], ret);
     Ok(())
@@ -173,7 +173,7 @@ fn global() -> Result<(), yaw::error::YawError> {
     let mut file = fs::File::open("./fixtures/wasm/global.wasm")?;
     let mut buf = vec![];
     file.read_to_end(&mut buf)?;
-    let ins = yaw::instantiate(&buf, None)?;
+    let mut ins = yaw::instantiate(&buf, None)?;
     let ret = ins.invoke("global", &[RuntimeValue::I32(1)])?;
     assert_eq!(vec![RuntimeValue::F32(5.1)], ret);
     Ok(())
@@ -184,7 +184,7 @@ fn i32_store_without_import() -> Result<(), yaw::error::YawError> {
     let mut file = fs::File::open("./fixtures/wasm/store_without_import.wasm")?;
     let mut buf = vec![];
     file.read_to_end(&mut buf)?;
-    let ins = yaw::instantiate(&buf, None)?;
+    let mut ins = yaw::instantiate(&buf, None)?;
     let ret = ins.invoke("store_without_import", &[])?;
     assert_eq!(vec![RuntimeValue::I32(0x5A5A_A5A5)], ret);
     Ok(())
@@ -195,7 +195,7 @@ fn grow() -> Result<(), yaw::error::YawError> {
     let mut file = fs::File::open("./fixtures/wasm/grow.wasm")?;
     let mut buf = vec![];
     file.read_to_end(&mut buf)?;
-    let ins = yaw::instantiate(&buf, None)?;
+    let mut ins = yaw::instantiate(&buf, None)?;
     let ret = ins.invoke("grow", &[RuntimeValue::I32(3), RuntimeValue::I32(1)])?;
     assert_eq!(vec![RuntimeValue::I32(6)], ret);
     Ok(())
@@ -206,7 +206,7 @@ fn fizzbuzz() -> Result<(), yaw::error::YawError> {
     let mut file = fs::File::open("./fixtures/wasm/fizzbuzz.wasm")?;
     let mut buf = vec![];
     file.read_to_end(&mut buf)?;
-    let ins = yaw::instantiate(&buf, None)?;
+    let mut ins = yaw::instantiate(&buf, None)?;
     let ret = ins.invoke("fizzbuzz", &[RuntimeValue::I32(0)])?;
     assert_eq!(vec![RuntimeValue::I32(3)], ret);
     let ret = ins.invoke("fizzbuzz", &[RuntimeValue::I32(1)])?;
@@ -225,7 +225,7 @@ fn sum_rs() -> Result<(), yaw::error::YawError> {
     let mut file = fs::File::open("./fixtures/wasm/sum-rs.wasm")?;
     let mut buf = vec![];
     file.read_to_end(&mut buf)?;
-    let ins = yaw::instantiate(&buf, None)?;
+    let mut ins = yaw::instantiate(&buf, None)?;
     let ret = ins.invoke("sum", &[RuntimeValue::I32(10)])?;
     assert_eq!(vec![RuntimeValue::I32(10)], ret);
     Ok(())
@@ -236,7 +236,7 @@ fn minimum_call_indirect() -> Result<(), yaw::error::YawError> {
     let mut file = fs::File::open("./fixtures/wasm/call_indirect.wasm")?;
     let mut buf = vec![];
     file.read_to_end(&mut buf)?;
-    let ins = yaw::instantiate(&buf, None)?;
+    let mut ins = yaw::instantiate(&buf, None)?;
     let ret = ins.invoke("callByIndex", &[RuntimeValue::I32(0)])?;
     assert_eq!(vec![RuntimeValue::I32(42)], ret);
     let ret = ins.invoke("callByIndex", &[RuntimeValue::I32(1)])?;
@@ -251,6 +251,7 @@ struct ImportFuncTest;
 impl FunctionResolver for ImportFuncTest {
     fn invoke(
         &self,
+        _vm: &mut VM,
         _name: &str,
         _field_name: &str,
         args: &[RuntimeValue],
@@ -268,7 +269,7 @@ fn import_func() -> Result<(), yaw::error::YawError> {
     let r = ImportFuncTest {};
     let mut imports = Imports::new();
     imports.add_function(&r);
-    let ins = yaw::instantiate(&buf, Some(&imports))?;
+    let mut ins = yaw::instantiate(&buf, Some(&imports))?;
     let ret = ins.invoke("exported_func", &[RuntimeValue::I32(0)])?;
     assert_eq!(vec![RuntimeValue::I32(84)], ret);
     Ok(())
@@ -289,7 +290,7 @@ fn import_global() -> Result<(), yaw::error::YawError> {
             ValueType::I32,
         ))),
     );
-    let ins = yaw::instantiate(&buf, Some(&imports))?;
+    let mut ins = yaw::instantiate(&buf, Some(&imports))?;
     let ret = ins.invoke("global", &[RuntimeValue::I32(0)])?;
     assert_eq!(vec![RuntimeValue::I32(42)], ret);
     Ok(())
