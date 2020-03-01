@@ -4,6 +4,7 @@ extern crate failure;
 pub mod error;
 pub mod types;
 pub mod vm;
+pub mod wasi32;
 
 mod decoder;
 mod reader;
@@ -17,6 +18,9 @@ pub use vm::{
     ExportType, Exports, FunctionResolver, Global, ImportResolver, Imports, Memory,
     MemoryDescriptor, MemoryRef, RuntimeError, TableInstance, TableRef, VM,
 };
+
+// TODO: hide later
+pub use wasi32::*;
 
 pub fn instantiate<B: AsRef<[u8]>>(
     buf: B,
