@@ -106,7 +106,7 @@ impl<'a> FunctionResolver for SpecModule<'a> {
             };
         }
         let inner = self.inner.borrow();
-        let mut m = inner
+        let m = inner
             .modules
             .get(&Some(name.to_owned()))
             .expect("should get module");

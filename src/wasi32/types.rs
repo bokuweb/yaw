@@ -1,5 +1,24 @@
+// #[macro_use]
+// extern crate bitflags;
+// #[macro_use]
+// extern crate proper;
+
 pub type Size = u32;
 pub type Pointer = u32;
+
+/// The type of a file descriptor or file.
+#[repr(u8)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum FileType {
+    Unknown,
+    BlockDevice,
+    CharacterDevice,
+    Directory,
+    RegularFile,
+    SocketDgram,
+    SocketStream,
+    SymbolicLink,
+}
 
 /*
 //! Rusty WASI type definitions based on
@@ -461,19 +480,6 @@ pub struct FdStat {
 /// Relative offset within a file.
 pub type FileDelta = i64;
 
-/// The type of a file descriptor or file.
-#[repr(u8)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Prim)]
-pub enum FileType {
-    Unknown,
-    BlockDevice,
-    CharacterDevice,
-    Directory,
-    RegularFile,
-    SocketDgram,
-    SocketStream,
-    SymbolicLink,
-}
 
 pub type FileSize = u64;
 

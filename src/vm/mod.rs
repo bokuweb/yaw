@@ -197,13 +197,6 @@ impl<'a> VM<'a> {
                 }
                 Opcode::CallIndirect => {
                     let type_index: usize = inst.1[0].into();
-                    // Reserved
-                    // let entry_index: usize = pop(vstack)?.into();
-                    // let t = self.table.borrow();
-                    // let fn_ref = t.entries.get(entry_index).expect("TODO").as_ref().unwrap();
-
-                    // if let Some(fn_ref) = self.table.borrow().entries.get(entry_index) {
-                    // if let Some(fn_ref) = fn_ref {
                     let func = {
                         let entry_index: usize = pop(vstack)?.into();
                         if let Some(fn_ref) = self.table.borrow().entries.get(entry_index) {
@@ -230,35 +223,6 @@ impl<'a> VM<'a> {
                             self.execute_external_function(func, vstack)?
                         }
                     }
-
-                    /* before
-                                        let type_index: usize = inst.1[0].into();
-                    // Reserved
-                    let entry_index: usize = pop(vstack)?.into();
-                    if let Some(fn_ref) = self.table.borrow().entries.get(entry_index) {
-                        if let Some(fn_ref) = fn_ref {
-                            let func = Rc::clone(fn_ref);
-                            match &*func {
-                                FunctionInstance::InternalFunction(func) => {
-                                    self.validate_call_indirect(func, type_index)?;
-                                    let instrs = Rc::clone(&instructions);
-                                    let frame = StackFrame::new(locals, lstack, instrs, pc);
-                                    // Save current context
-                                    cstack.push(frame);
-                                    cstack.push(self.create_new_frame(func, vstack)?);
-                                    return Ok(Next::Continue);
-                                }
-                                FunctionInstance::ExternalFunction(func) => {
-                                    self.execute_external_function(func, vstack)?
-                                }
-                            }
-                        } else {
-                            return Err(RuntimeError::UnInitializedElementError.into());
-                        }
-                    } else {
-                        return Err(RuntimeError::UndefinedElementError.into());
-                    }
-                    */
                 }
                 Opcode::If => pc = r#if(&inst.1, &instructions, pc, vstack, &mut lstack)?,
                 Opcode::Else => pc = r#else(&instructions, pc, &mut lstack)?,
@@ -385,9 +349,10 @@ impl<'a> VM<'a> {
         vstack: &mut ValueStack,
     ) -> Result<(), RuntimeError> {
         if let Some(resolver) = &self.func_resolver {
-            let mut args: Vec<RuntimeValue> = vec![];
-            for _ in 0..func.args.len() {
-                args.push(pop(vstack)?);
+            let len = func.args.len();
+            let mut args: Vec<RuntimeValue> = vec![RuntimeValue::I32(0); len];
+            for i in 0..len {
+                args[len - i - 1] = pop(vstack)?;
             }
             let result = resolver.invoke(self, &func.module_name, &func.field_name, &args)?;
             for r in result {

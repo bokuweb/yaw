@@ -8,7 +8,7 @@ struct Wasi32Functions {}
 impl FunctionResolver for Wasi32Functions {
     fn invoke(
         &self,
-        _vm: &mut VM,
+        ins: &mut VM,
         _name: &str,
         field_name: &str,
         args: &[RuntimeValue],
@@ -16,9 +16,14 @@ impl FunctionResolver for Wasi32Functions {
         match field_name {
             "fd_write" => {
                 let mut ctx = WasiCtx {};
-                let m = MemoryRef::new(MemoryDescriptor::new(1, None));
+                let m = ins.resolve_memory()?;
+                dbg!(&args);
+                let fd: u32 = args[0].into();
+                let ptr: u32 = args[1].into();
+                let len: u32 = args[2].into();
+                let written: u32 = args[3].into();
                 unsafe {
-                    fd_write(&mut ctx, &m, Fd::new(1), 0, 0, 0);
+                    fd_write(&mut ctx, &m, Fd::new(fd), ptr, len, written);
                 }
                 Ok(vec![RuntimeValue::I32(0)])
             }

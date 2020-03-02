@@ -1,5 +1,6 @@
-use std::cell::RefCell;
+use std::cell::{Ref, RefCell};
 use std::io::{Cursor, Read, Write};
+use std::ops::Deref;
 use std::rc::Rc;
 
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
@@ -78,11 +79,15 @@ impl MemoryRef {
         Ok(s.to_owned())
     }
 
-    pub fn slice(&self, start: usize, len: usize) -> Result<Vec<u8>, std::str::Utf8Error> {
-        let b = self.0.borrow();
-        let b = &b.buf[start..start + len];
-        let s = Vec::from(b);
-        Ok(s)
+    // pub fn slice(&self, start: usize, len: usize) -> Result<Vec<u8>, std::str::Utf8Error> {
+    //     let b = self.0.borrow();
+    //     let b = &b.buf[start..start + len];
+    //     let s = Vec::from(b);
+    //     Ok(s)
+    // }
+
+    pub fn slice(&self, start: usize, len: usize) -> impl Deref<Target = [u8]> + '_ {
+        Ref::map(self.0.borrow(), |mi| &mi.buf[start..start + len])
     }
 
     pub fn grow(&self, delta: u32) -> i32 {

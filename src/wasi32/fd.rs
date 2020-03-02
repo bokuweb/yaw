@@ -1,8 +1,10 @@
+use super::*;
+
 /// A file descriptor number.
 /// As in POSIX, 0, 1, and 2 are stdin, stdout, and stderr, respectively.
 /// File descriptors are not guaranteed to be contiguous or allocated in ascending order.
 /// Information about a file descriptor may be obtained through `fd_prestat_get`.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct Fd(u32);
 
 impl Fd {
@@ -10,6 +12,25 @@ impl Fd {
         Self(n)
     }
 }
+
+#[derive(Debug)]
+pub(crate) enum Descriptor {
+    OsHandle(OsHandle),
+    Stdin,
+    Stdout,
+    Stderr,
+}
+
+#[derive(Debug)]
+pub(crate) struct FdEntry {
+    pub(crate) file_type: FileType,
+    descriptor: Descriptor,
+    // pub(crate) rights_base: wasi::__wasi_rights_t,
+    // pub(crate) rights_inheriting: wasi::__wasi_rights_t,
+    // pub(crate) preopen_path: Option<PathBuf>,
+    // TODO: directories
+}
+
 /*
 use crate::old::snapshot_0::sys::dev_null;
 use crate::old::snapshot_0::sys::fdentry_impl::{
